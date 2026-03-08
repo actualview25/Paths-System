@@ -298,7 +298,43 @@
             
             return cylinder;
         }
-
+function createMeasurementElement(m) {
+    const line = document.createElement('div'); 
+    line.className = 'measurement-line'; 
+    line.style.display = 'none';
+    
+    const start = document.createElement('div'); 
+    start.className = 'measurement-point'; 
+    start.style.display = 'none';
+    
+    const end = document.createElement('div'); 
+    end.className = 'measurement-point'; 
+    end.style.display = 'none';
+    
+    const label = document.createElement('div'); 
+    label.className = 'measurement-label'; 
+    label.textContent = m.length + ' m'; 
+    label.style.display = 'none';
+    
+    // حفظ المواقع العالمية
+    line._start = new THREE.Vector3(m.start.x, m.start.y, m.start.z);
+    line._end = new THREE.Vector3(m.end.x, m.end.y, m.end.z);
+    start._worldPos = new THREE.Vector3(m.start.x, m.start.y, m.start.z);
+    end._worldPos = new THREE.Vector3(m.end.x, m.end.y, m.end.z);
+    label._worldPos = new THREE.Vector3().addVectors(start._worldPos, end._worldPos).multiplyScalar(0.5);
+    
+    // إضافة عنصر وحدة القياس (متر) بجانب الرقم
+    if (!label.textContent.includes('م')) {
+        label.textContent = m.length + ' م';
+    }
+    
+    document.body.appendChild(line); 
+    document.body.appendChild(start); 
+    document.body.appendChild(end); 
+    document.body.appendChild(label);
+    
+    return { line, start, end, label };
+}
         // =======================================
         // نظام تحميل المشاهد الذكي (Lazy Loading)
         // =======================================
@@ -440,15 +476,23 @@
                 e.label.style.left = mx + 'px'; e.label.style.top = (my - 30) + 'px';
             });
         }
-
-        function loadMeasurements(sceneData) {
-            measurementElements.forEach(e => { if(e.line) e.line.remove(); });
-            measurementElements = [];
-            if (sceneData.measurements) {
-                sceneData.measurements.forEach(m => measurementElements.push(createMeasurementElement(m)));
-            }
-        }
-        
+.function loadMeasurements(sceneData) {
+    // ❌ تنظيف القياسات القديمة من DOM بشكل كامل
+    measurementElements.forEach(e => {
+        if(e.line) e.line.remove();
+        if(e.start) e.start.remove();
+        if(e.end) e.end.remove();
+        if(e.label) e.label.remove();
+    });
+    
+    // ✅ تفريغ المصفوفة
+    measurementElements = [];
+    
+    // ✅ بناء القياسات الجديدة إذا وجدت
+    if (sceneData.measurements) {
+        sceneData.measurements.forEach(m => measurementElements.push(createMeasurementElement(m)));
+    }
+}
         // ===== دوال المشاهد =====
         function updateSceneList() {
             const list = document.getElementById('sceneList');
