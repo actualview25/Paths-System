@@ -421,30 +421,34 @@
             });
         }
         
-        // ===== دوال Hotspots =====
-        function createHotspotElement(x, y, type, data) {
-            const div = document.createElement('div');
-            div.className = 'hotspot-marker';
-            div.style.left = x + 'px'; div.style.top = y + 'px';
-            div.style.cursor = 'pointer'; div.style.zIndex = '1000';
-            
-            const url = type === 'SCENE' ? ICONS.hotspot : ICONS.info;
-            const color = type === 'SCENE' ? '#44aaff' : '#ffaa44';
-            const text = type === 'SCENE' ? (data.targetSceneName || 'انتقال') : (data.title || 'معلومات');
-            
-            div.innerHTML = '<img src="' + url + '" style="border:2px solid ' + color + '; width:40px; height:40px; border-radius:50%; pointer-events:none;">' +
-                '<div style="position:absolute; top:-40px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.8); color:white; padding:4px 8px; border-radius:12px; border:2px solid ' + color + ';">' + text + '</div>';
-            
-            div.onclick = () => {
-                if (type === 'INFO') alert(data.title + '\n' + (data.content || ''));
-                else if (data.targetSceneId) {
-                    const idx = sceneLoader.scenes.findIndex(s => s.id === data.targetSceneId);
-                    if (idx !== -1) loadScene(idx);
-                }
-            };
-            return div;
+  function createHotspotElement(x, y, type, data) {
+    const div = document.createElement('div');
+    div.className = 'hotspot-marker';
+    div.style.left = x + 'px';
+    div.style.top = y + 'px';
+    div.style.cursor = 'pointer';
+    div.style.zIndex = '1000';
+    
+    const url = type === 'SCENE' ? ICONS.hotspot : ICONS.info;
+    const color = type === 'SCENE' ? '#44aaff' : '#ffaa44';
+    const text = type === 'SCENE' ? (data.targetSceneName || 'انتقال') : (data.title || 'معلومات');
+    
+    // ✅ بنية محسنة: الصورة + label منفصل مع opacity:0 افتراضياً
+    div.innerHTML = `
+        <img src="${url}" style="border:2px solid ${color}; width:40px; height:40px; border-radius:50%; pointer-events:none;">
+        <span class="hotspot-label" style="border:2px solid ${color};">${text}</span>
+    `;
+    
+    div.onclick = () => {
+        if (type === 'INFO') alert(data.title + '\n' + (data.content || ''));
+        else if (data.targetSceneId) {
+            const idx = sceneLoader.scenes.findIndex(s => s.id === data.targetSceneId);
+            if (idx !== -1) loadScene(idx);
         }
-
+    };
+    
+    return div;
+}
         // *** هذه هي الدالة المعدلة التي ستحل المشكلة نهائياً ***
         function updateHotspotsPosition() {
             const w = window.innerWidth, h = window.innerHeight;
