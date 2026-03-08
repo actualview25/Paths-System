@@ -500,7 +500,7 @@ class SceneLoader {
         e.label.style.top = (my - 30) + 'px';
     });
 }
-.function loadMeasurements(sceneData) {
+function loadMeasurements(sceneData) {
     // ❌ تنظيف القياسات القديمة من DOM بشكل كامل
     measurementElements.forEach(e => {
         if(e.line) e.line.remove();
