@@ -1061,6 +1061,7 @@
                 }
             });
             // ===== التحكم بعناصر الهاتف المحمول (نسخة محسنة) =====
+// ===== التحكم بعناصر الهاتف المحمول (نسخة محسنة مع إغلاق تلقائي) =====
 const isMobile = window.innerWidth <= 768;
 
 if (isMobile) {
@@ -1076,28 +1077,23 @@ if (isMobile) {
     // تهيئة الحالة الأولية: القوائم مخفية
     if (sceneListPanel) {
         sceneListPanel.classList.add('hidden');
-        sceneListPanel.style.display = 'flex'; // تبقى موجودة لكن مخفية بالـ transform
     }
     if (pathsPanel) {
         pathsPanel.classList.remove('show');
-        pathsPanel.style.display = 'block'; // تبقى موجودة لكن مخفية بالـ display
     }
     
     // زر قائمة المشاهد
     if (toggleSceneBtn) {
         toggleSceneBtn.addEventListener('click', (e) => {
             e.stopPropagation();
-            e.preventDefault();
             
-            // تبديل حالة قائمة المشاهد
-            sceneListPanel.classList.toggle('hidden');
-            
-            // إذا فتحنا المشاهد، نخفي المسارات تلقائياً
-            if (!sceneListPanel.classList.contains('hidden')) {
+            // إذا كانت المسارات مفتوحة، أغلقها أولاً
+            if (pathsPanel.classList.contains('show')) {
                 pathsPanel.classList.remove('show');
             }
             
-            console.log('Scene list toggled:', !sceneListPanel.classList.contains('hidden'));
+            // افتح/أغلق قائمة المشاهد
+            sceneListPanel.classList.toggle('hidden');
         });
     }
     
@@ -1105,18 +1101,40 @@ if (isMobile) {
     if (togglePathsBtn) {
         togglePathsBtn.addEventListener('click', (e) => {
             e.stopPropagation();
-            e.preventDefault();
             
-            // تبديل حالة لوحة المسارات
-            pathsPanel.classList.toggle('show');
-            
-            // إذا فتحنا المسارات، نخفي المشاهد تلقائياً
-            if (pathsPanel.classList.contains('show')) {
+            // إذا كانت المشاهد مفتوحة، أغلقها أولاً
+            if (!sceneListPanel.classList.contains('hidden')) {
                 sceneListPanel.classList.add('hidden');
             }
             
-            console.log('Paths panel toggled:', pathsPanel.classList.contains('show'));
+            // افتح/أغلق لوحة المسارات
+            pathsPanel.classList.toggle('show');
         });
+    }
+    
+    // إغلاق القوائم عند النقر خارجها
+    document.addEventListener('click', function(e) {
+        // إذا كانت قائمة المشاهد مفتوحة والنقر ليس عليها ولا على زرها
+        if (!sceneListPanel.classList.contains('hidden')) {
+            if (!sceneListPanel.contains(e.target) && !toggleSceneBtn.contains(e.target)) {
+                sceneListPanel.classList.add('hidden');
+            }
+        }
+        
+        // إذا كانت لوحة المسارات مفتوحة والنقر ليس عليها ولا على زرها
+        if (pathsPanel.classList.contains('show')) {
+            if (!pathsPanel.contains(e.target) && !togglePathsBtn.contains(e.target)) {
+                pathsPanel.classList.remove('show');
+            }
+        }
+    });
+    
+    // منع إغلاق النوافذ عند النقر داخل المحتوى
+    if (sceneListPanel) {
+        sceneListPanel.addEventListener('click', (e) => e.stopPropagation());
+    }
+    if (pathsPanel) {
+        pathsPanel.addEventListener('click', (e) => e.stopPropagation());
     }
     
     // عند النقر على مشهد، نخفي القائمة
@@ -1128,17 +1146,14 @@ if (isMobile) {
             }
         });
     }
-    
-    // لا نخفي القوائم عند النقر خارجها - نتركها مفتوحة حتى يغلقها المستخدم بالزر
 } else {
-    // وضع الكمبيوتر: نظهر كل شيء
+    // وضع الكمبيوتر: نظهر كل شيء طوال الوقت
     const sceneListPanel = document.getElementById('sceneListPanel');
     const pathsPanel = document.getElementById('pathsPanel');
     const mobileControls = document.getElementById('mobileControls');
     
     if (sceneListPanel) {
         sceneListPanel.classList.remove('hidden');
-        sceneListPanel.style.display = 'flex';
     }
     if (pathsPanel) {
         pathsPanel.classList.remove('show');
@@ -1211,6 +1226,88 @@ function onWindowResize() {
 
         // بدء التطبيق
         init();
+
+        // ===== إضافة خاصية إغلاق النوافذ عند النقر خارجها للهاتف =====
+        (function setupMobileCloseOnClickOutside() {
+            // التحقق إذا كان الهاتف
+            const isMobile = window.innerWidth <= 768;
+            
+            if (isMobile) {
+                const sceneListPanel = document.getElementById('sceneListPanel');
+                const pathsPanel = document.getElementById('pathsPanel');
+                const toggleSceneBtn = document.getElementById('toggleSceneListBtn');
+                const togglePathsBtn = document.getElementById('togglePathsPanelBtn');
+                
+                // التأكد من وجود العناصر
+                if (!sceneListPanel || !pathsPanel || !toggleSceneBtn || !togglePathsBtn) return;
+                
+                // function animate() {
+                requestAnimationFrame(animate);
+                
+                if (controls) controls.update();
+                
+                if (renderer && scene3D && camera) {
+                    renderer.render(scene3D, camera);
+                }
+                
+                updateHotspotsPosition();
+                updateMeasurementPositions();
+            }
+            
+            animate();
+            
+            console.log('✅ تم تهيئة التطبيق بنجاح');
+        }
+
+        // تعريف المتغير العام sceneLoader
+        const sceneLoader = new SceneLoader();
+
+        // بدء التطبيق
+        init();
+
+        // ===== إضافة خاصية إغلاق النوافذ عند النقر خارجها للهاتف =====
+        (function setupMobileCloseOnClickOutside() {
+            // التحقق إذا كان الهاتف
+            const isMobile = window.innerWidth <= 768;
+            
+            if (isMobile) {
+                const sceneListPanel = document.getElementById('sceneListPanel');
+                const pathsPanel = document.getElementById('pathsPanel');
+                const toggleSceneBtn = document.getElementById('toggleSceneListBtn');
+                const togglePathsBtn = document.getElementById('togglePathsPanelBtn');
+                
+                // التأكد من وجود العناصر
+                if (!sceneListPanel || !pathsPanel || !toggleSceneBtn || !togglePathsBtn) return;
+                
+                // إغلاق القوائم عند النقر خارجها
+                document.addEventListener('click', function(e) {
+                    // إذا كانت قائمة المشاهد مفتوحة والنقر ليس عليها ولا على زرها
+                    if (!sceneListPanel.classList.contains('hidden')) {
+                        if (!sceneListPanel.contains(e.target) && !toggleSceneBtn.contains(e.target)) {
+                            sceneListPanel.classList.add('hidden');
+                        }
+                    }
+                    
+                    // إذا كانت لوحة المسارات مفتوحة والنقر ليس عليها ولا على زرها
+                    if (pathsPanel.classList.contains('show')) {
+                        if (!pathsPanel.contains(e.target) && !togglePathsBtn.contains(e.target)) {
+                            pathsPanel.classList.remove('show');
+                        }
+                    }
+                });
+                
+                // منع إغلاق النوافذ عند النقر داخل المحتوى
+                sceneListPanel.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                });
+                
+                pathsPanel.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                });
+                
+                console.log('📱 تم تفعيل خاصية إغلاق النوافذ للهاتف');
+            }
+        })();
     </script>
 
     <!-- لوحة المعلومات المخصصة -->
