@@ -308,11 +308,7 @@
         let showMeasurements = false;
         
         const pathColors = { EL: '#ffcc00', AC: '#00ccff', WP: '#0066cc', WA: '#ff3300', GS: '#33cc33' };
-        
-        // ===== تهيئة نظام التحميل =====
-        const sceneLoader = new SceneLoader();
-
-        // ===== دوال القياس =====
+// ===== دوال القياس =====
         function createMeasurementElement(m) {
             const line = document.createElement('div'); line.className = 'measurement-line'; line.style.display = 'none';
             const start = document.createElement('div'); start.className = 'measurement-point'; start.style.display = 'none';
@@ -330,7 +326,6 @@
             document.body.appendChild(end); document.body.appendChild(label);
             return { line, start, end, label };
         }
-
         function updateMeasurementPositions() {
             if (!camera) return;
             const w = window.innerWidth, h = window.innerHeight;
@@ -408,40 +403,36 @@
             return div;
         }
 
-        function rebuildHotspots() {
-            document.querySelectorAll('.hotspot-marker').forEach(el => el.remove());
-            hotspotMarkers = {};
-            const cs = sceneLoader.scenes[currentSceneIndex];
-            if (!cs?.hotspots) return;
-            
-            const w = window.innerWidth, h = window.innerHeight;
-            cs.hotspots.forEach(h => {
-                const pos = new THREE.Vector3(h.position.x, h.position.y, h.position.z);
-                const proj = pos.clone().project(camera);
-                if (proj.z > 1) return;
-                
-                const x = (proj.x * 0.5 + 0.5) * w;
-                const y = (-proj.y * 0.5 + 0.5) * h;
-                if (x < -100 || x > w+100 || y < -100 || y > h+100) return;
-                
-                const el = createHotspotElement(x, y, h.type, h.data);
-                el._worldPosition = pos.clone();
-                document.body.appendChild(el);
-                hotspotMarkers[h.id] = el;
-            });
-        }
-
+        // *** هذه هي الدالة المعدلة التي ستحل المشكلة نهائياً ***
         function updateHotspotsPosition() {
             const w = window.innerWidth, h = window.innerHeight;
             Object.values(hotspotMarkers).forEach(el => {
                 if (!el._worldPosition) return;
+
+                // 1. إسقاط النقطة من العالم إلى إحداثيات الشاشة
                 const proj = el._worldPosition.clone().project(camera);
-                if (proj.z > 1) { el.style.display = 'none'; return; }
+
+                // 2. التحقق إذا كانت النقطة خلف الكاميرا (z > 1) أو أمامها بمسافة غير طبيعية (z < -1)
+                //    هذا هو الشرط الصحيح لإخفاء النقاط غير المرئية.
+                if (proj.z < -1 || proj.z > 1) {
+                    el.style.display = 'none';
+                    return;
+                }
+
+                // 3. تحويل الإحداثيات المقيسة (من -1 إلى 1) إلى إحداثيات بكسل
                 const x = (proj.x * 0.5 + 0.5) * w;
                 const y = (-proj.y * 0.5 + 0.5) * h;
-                if (x < -100 || x > w+100 || y < -100 || y > h+100) { el.style.display = 'none'; return; }
+
+                // 4. (اختياري) إخفاء النقاط التي تقع خارج حدود الشاشة بهامش بسيط
+                if (x < -100 || x > w + 100 || y < -100 || y > h + 100) {
+                    el.style.display = 'none';
+                    return;
+                }
+
+                // 5. إذا وصلت إلى هنا، فالنقطة مرئية. أظهرها وحدد موقعها.
                 el.style.display = 'block';
-                el.style.left = x + 'px'; el.style.top = y + 'px';
+                el.style.left = x + 'px';
+                el.style.top = y + 'px';
             });
         }
         
@@ -471,12 +462,15 @@
             
             currentSceneIndex = index;
             
+            // تنظيف العناصر القديمة
             if (sphereMesh) scene3D.remove(sphereMesh);
+            // إزالة Hotspots القديمة من الـ DOM
             document.querySelectorAll('.hotspot-marker').forEach(el => el.remove());
             allPaths.forEach(p => scene3D.remove(p));
             allPaths = [];
-            hotspotMarkers = {};
+            hotspotMarkers = {}; // تفريغ الكائن القديم
             
+            // تحميل الصورة الجديدة
             const texture = await new Promise((resolve, reject) => {
                 new THREE.TextureLoader().load(sceneData.image, resolve, undefined, reject);
             });
@@ -504,7 +498,6 @@
                         const start = points[i];
                         const end = points[i + 1];
                         
-                        // ✅ استخدام الدالة المحسنة
                         const cylinder = createPathSegment(start, end, color, pathData.type);
                         if (cylinder) {
                             scene3D.add(cylinder);
@@ -516,24 +509,35 @@
                 console.log('✅ تم بناء', allPaths.length, 'مقطع مسار (فوق الصورة)');
             }
             
-            // بناء النقاط
+            // ========== الكود المعدل لبناء Hotspots ==========
+            // ✅ إنشاء جميع الـ Hotspots بدون أي فلترة مسبقة
             if (sceneData.hotspots) {
-                const w = window.innerWidth, h = window.innerHeight;
+                console.log(`🔴 بناء ${sceneData.hotspots.length} نقطة ساخنة`);
                 sceneData.hotspots.forEach(h => {
-                    const pos = new THREE.Vector3(h.position.x, h.position.y, h.position.z);
-                    const proj = pos.clone().project(camera);
-                    if (proj.z > 1) return;
+                    // إنشاء النقطة في منتصف الشاشة (0,0) مؤقتاً
+                    const el = createHotspotElement(0, 0, h.type, h.data);
                     
-                    const x = (proj.x * 0.5 + 0.5) * w;
-                    const y = (-proj.y * 0.5 + 0.5) * h;
-                    if (x < -100 || x > w+100 || y < -100 || y > h+100) return;
+                    // حفظ الموقع الحقيقي في الخاصية _worldPosition
+                    el._worldPosition = new THREE.Vector3(
+                        h.position.x,
+                        h.position.y,
+                        h.position.z
+                    );
                     
-                    const el = createHotspotElement(x, y, h.type, h.data);
-                    el._worldPosition = pos.clone();
+                    // إضافتها إلى الـ DOM
                     document.body.appendChild(el);
-                    hotspotMarkers[h.id] = el;
+                    
+                    // حفظها في الكائن الرئيسي باستخدام id
+                    if (h.id) {
+                        hotspotMarkers[h.id] = el;
+                    } else {
+                        // إذا لم يكن هناك id، استخدم index عشوائي
+                        const tempId = 'hotspot_' + Math.random().toString(36).substr(2, 9);
+                        hotspotMarkers[tempId] = el;
+                    }
                 });
             }
+            // =================================================
             
             // بناء القياسات
             loadMeasurements(sceneData);
@@ -546,6 +550,8 @@
         
         // ===== التهيئة =====
         async function init() {
+            sceneLoader = new SceneLoader(); // تأكد من تعريف sceneLoader هنا أو قبله كمتغير عام
+            
             scene3D = new THREE.Scene();
             scene3D.background = new THREE.Color(0x000000);
             
@@ -570,7 +576,7 @@
             
             document.getElementById('toggleMeasurements').onclick = () => {
                 showMeasurements = !showMeasurements;
-                document.getElementById('toggleMeasurements').textContent = showMeasurements ? '📏 Hide Meas' : '📏 Shoe Meas';
+                document.getElementById('toggleMeasurements').textContent = showMeasurements ? '📏 Hide Meas' : '📏 Show Meas';
                 measurementElements.forEach(e => {
                     if(e.line) e.line.style.display = showMeasurements ? 'block' : 'none';
                 });
@@ -585,23 +591,30 @@
                 await loadScene(0);
             }
             
-            window.addEventListener('resize', () => {
-                camera.aspect = innerWidth / innerHeight;
+            window.addEventListener('resize', onWindowResize, false);
+            
+            function onWindowResize() {
+                camera.aspect = window.innerWidth / window.innerHeight;
                 camera.updateProjectionMatrix();
-                renderer.setSize(innerWidth, innerHeight);
-            });
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            }
             
             function animate() {
                 requestAnimationFrame(animate);
                 controls.update();
                 renderer.render(scene3D, camera);
-                updateHotspotsPosition();
+                updateHotspotsPosition(); // هذه الدالة الآن تقوم بكل العمل
                 updateMeasurementPositions();
             }
             animate();
         }
         
+        // تعريف المتغير العام sceneLoader
+        const sceneLoader = new SceneLoader();
+        
+        // بدء التطبيق
         init();
     </script>
 </body>
 </html>
+
