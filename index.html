@@ -1253,8 +1253,7 @@ function onWindowResize() {
                 updateHotspotsPosition();
                 updateMeasurementPositions();
             }
-            
-            animate();
+          animate();
             
             console.log('✅ تم تهيئة التطبيق بنجاح');
         }
@@ -1264,9 +1263,12 @@ function onWindowResize() {
 
         // بدء التطبيق
         init();
+    </script>
 
-        // ===== إضافة خاصية إغلاق النوافذ عند النقر خارجها للهاتف =====
-        (function setupMobileCloseOnClickOutside() {
+    <!-- ===== كود إغلاق النوافذ للهاتف (خارج وسم script) ===== -->
+    <script>
+        // تأخير التنفيذ حتى بعد تحميل الصفحة بالكامل
+        setTimeout(function() {
             // التحقق إذا كان الهاتف
             const isMobile = window.innerWidth <= 768;
             
@@ -1277,7 +1279,10 @@ function onWindowResize() {
                 const togglePathsBtn = document.getElementById('togglePathsPanelBtn');
                 
                 // التأكد من وجود العناصر
-                if (!sceneListPanel || !pathsPanel || !toggleSceneBtn || !togglePathsBtn) return;
+                if (!sceneListPanel || !pathsPanel || !toggleSceneBtn || !togglePathsBtn) {
+                    console.log('❌ عناصر التحكم غير موجودة');
+                    return;
+                }
                 
                 // إغلاق القوائم عند النقر خارجها
                 document.addEventListener('click', function(e) {
@@ -1307,7 +1312,7 @@ function onWindowResize() {
                 
                 console.log('📱 تم تفعيل خاصية إغلاق النوافذ للهاتف');
             }
-        })();
+        }, 500); // تأخير نصف ثانية لضمان تحميل كل العناصر
     </script>
 
     <!-- لوحة المعلومات المخصصة -->
