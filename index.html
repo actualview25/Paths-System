@@ -1219,109 +1219,100 @@ function onWindowResize() {
             animate();
             
             console.log('✅ تم تهيئة التطبيق بنجاح');
+        document.addEventListener('click', function(e) {
+
+    const sceneListPanel = document.getElementById('sceneListPanel');
+    const pathsPanel = document.getElementById('pathsPanel');
+    const toggleSceneBtn = document.getElementById('toggleSceneListBtn');
+    const togglePathsBtn = document.getElementById('togglePathsPanelBtn');
+
+    if (window.innerWidth <= 768) {
+
+        if (!sceneListPanel.contains(e.target) && !toggleSceneBtn.contains(e.target)) {
+            sceneListPanel.classList.add('hidden');
         }
 
-        // تعريف المتغير العام sceneLoader
-        const sceneLoader = new SceneLoader();
+       if (!pathsPanel.contains(e.target) && !togglePathsBtn.contains(e.target)) {
+    pathsPanel.classList.remove('show');
+}
 
-        // بدء التطبيق
-        init();
+}
 
-        // ===== إضافة خاصية إغلاق النوافذ عند النقر خارجها للهاتف =====
-        (function setupMobileCloseOnClickOutside() {
-            // التحقق إذا كان الهاتف
-            const isMobile = window.innerWidth <= 768;
-            
-            if (isMobile) {
-                const sceneListPanel = document.getElementById('sceneListPanel');
-                const pathsPanel = document.getElementById('pathsPanel');
-                const toggleSceneBtn = document.getElementById('toggleSceneListBtn');
-                const togglePathsBtn = document.getElementById('togglePathsPanelBtn');
-                
-                // التأكد من وجود العناصر
-                if (!sceneListPanel || !pathsPanel || !toggleSceneBtn || !togglePathsBtn) return;
-                
-                // function animate() {
-                requestAnimationFrame(animate);
-                
-                if (controls) controls.update();
-                
-                if (renderer && scene3D && camera) {
-                    renderer.render(scene3D, camera);
-                }
-                
-                updateHotspotsPosition();
-                updateMeasurementPositions();
-            }
-          animate();
-            
-            console.log('✅ تم تهيئة التطبيق بنجاح');
+});
+
+}
+
+// تعريف المتغير العام sceneLoader
+const sceneLoader = new SceneLoader();
+
+// بدء التطبيق
+init();
+
+
+// ===== إضافة خاصية إغلاق النوافذ عند النقر خارجها للهاتف =====
+setTimeout(function () {
+
+    // التحقق إذا كان الهاتف
+    const isMobile = window.innerWidth <= 768;
+
+    if (isMobile) {
+
+        const sceneListPanel = document.getElementById('sceneListPanel');
+        const pathsPanel = document.getElementById('pathsPanel');
+        const toggleSceneBtn = document.getElementById('toggleSceneListBtn');
+        const togglePathsBtn = document.getElementById('togglePathsPanelBtn');
+
+        // التأكد من وجود العناصر
+        if (!sceneListPanel || !pathsPanel || !toggleSceneBtn || !togglePathsBtn) {
+            console.log('❌ عناصر التحكم غير موجودة');
+            return;
         }
 
-        // تعريف المتغير العام sceneLoader
-        const sceneLoader = new SceneLoader();
+        // إغلاق القوائم عند النقر خارجها
+        document.addEventListener('click', function (e) {
 
-        // بدء التطبيق
-        init();
-    </script>
-
-    <!-- ===== كود إغلاق النوافذ للهاتف (خارج وسم script) ===== -->
-    <script>
-        // تأخير التنفيذ حتى بعد تحميل الصفحة بالكامل
-        setTimeout(function() {
-            // التحقق إذا كان الهاتف
-            const isMobile = window.innerWidth <= 768;
-            
-            if (isMobile) {
-                const sceneListPanel = document.getElementById('sceneListPanel');
-                const pathsPanel = document.getElementById('pathsPanel');
-                const toggleSceneBtn = document.getElementById('toggleSceneListBtn');
-                const togglePathsBtn = document.getElementById('togglePathsPanelBtn');
-                
-                // التأكد من وجود العناصر
-                if (!sceneListPanel || !pathsPanel || !toggleSceneBtn || !togglePathsBtn) {
-                    console.log('❌ عناصر التحكم غير موجودة');
-                    return;
+            if (!sceneListPanel.classList.contains('hidden')) {
+                if (!sceneListPanel.contains(e.target) && !toggleSceneBtn.contains(e.target)) {
+                    sceneListPanel.classList.add('hidden');
                 }
-                
-                // إغلاق القوائم عند النقر خارجها
-                document.addEventListener('click', function(e) {
-                    // إذا كانت قائمة المشاهد مفتوحة والنقر ليس عليها ولا على زرها
-                    if (!sceneListPanel.classList.contains('hidden')) {
-                        if (!sceneListPanel.contains(e.target) && !toggleSceneBtn.contains(e.target)) {
-                            sceneListPanel.classList.add('hidden');
-                        }
-                    }
-                    
-                    // إذا كانت لوحة المسارات مفتوحة والنقر ليس عليها ولا على زرها
-                    if (pathsPanel.classList.contains('show')) {
-                        if (!pathsPanel.contains(e.target) && !togglePathsBtn.contains(e.target)) {
-                            pathsPanel.classList.remove('show');
-                        }
-                    }
-                });
-                
-                // منع إغلاق النوافذ عند النقر داخل المحتوى
-                sceneListPanel.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                });
-                
-                pathsPanel.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                });
-                
-                console.log('📱 تم تفعيل خاصية إغلاق النوافذ للهاتف');
             }
-        }, 500); // تأخير نصف ثانية لضمان تحميل كل العناصر
-    </script>
 
-    <!-- لوحة المعلومات المخصصة -->
-    <div id="infoPanel"></div>
+            if (pathsPanel.classList.contains('show')) {
+                if (!pathsPanel.contains(e.target) && !togglePathsBtn.contains(e.target)) {
+                    pathsPanel.classList.remove('show');
+                }
+            }
 
-    <!-- أزرار التحكم للهاتف -->
-    <div id="mobileControls" style="display: none; position: fixed; bottom: 150px; left: 10px; z-index: 950; flex-direction: column; gap: 8px;">
-        <button id="toggleSceneListBtn" style="background: rgba(20,30,40,0.8); backdrop-filter: blur(12px); color: white; border: 1px solid rgba(74,108,143,0.5); border-radius: 30px; width: 44px; height: 44px; font-size: 24px; cursor: pointer; display: flex; align-items: center; justify-content: center;">📋</button>
-        <button id="togglePathsPanelBtn" style="background: rgba(20,30,40,0.8); backdrop-filter: blur(12px); color: white; border: 1px solid rgba(74,108,143,0.5); border-radius: 30px; width: 44px; height: 44px; font-size: 24px; cursor: pointer; display: flex; align-items: center; justify-content: center;">🔘</button>
-    </div>
+        });
+
+        // منع إغلاق النوافذ عند النقر داخلها
+        sceneListPanel.addEventListener('click', function (e) {
+            e.stopPropagation();
+        });
+
+        pathsPanel.addEventListener('click', function (e) {
+            e.stopPropagation();
+        });
+
+        console.log('📱 تم تفعيل خاصية إغلاق النوافذ للهاتف');
+
+    }
+
+}, 500);
+</script>
+
+
+<!-- لوحة المعلومات -->
+<div id="infoPanel"></div>
+
+<!-- أزرار الهاتف -->
+<div id="mobileControls" style="display: none; position: fixed; bottom: 150px; left: 10px; z-index: 950; flex-direction: column; gap: 8px;">
+    
+<button id="toggleSceneListBtn" style="background: rgba(20,30,40,0.8); backdrop-filter: blur(12px); color: white; border: 1px solid rgba(74,108,143,0.5); border-radius: 30px; width: 44px; height: 44px; font-size: 24px; cursor: pointer; display: flex; align-items: center; justify-content: center;">📋</button>
+
+<button id="togglePathsPanelBtn" style="background: rgba(20,30,40,0.8); backdrop-filter: blur(12px); color: white; border: 1px solid rgba(74,108,143,0.5); border-radius: 30px; width: 44px; height: 44px; font-size: 24px; cursor: pointer; display: flex; align-items: center; justify-content: center;">🔘</button>
+
+</div>
+
 </body>
 </html>
