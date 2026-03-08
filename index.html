@@ -116,17 +116,17 @@
     
     <div id="container"></div>
     
-    <button id="autoRotateBtn">⏸️ إيقاف الدوران</button>
-    <button id="toggleMeasurements">📏 إظهار القياسات</button>
+    <button id="autoRotateBtn">⏸️ Camera Rotation</button>
+    <button id="toggleMeasurements">📏 Show Measurmenet</button>
     
     <div class="paths-control-panel" id="pathsPanel">
-        <h3>🔘 التحكم بالمسارات</h3>
+        <h3>🔘 PATHS CONTROL</h3>
         <div id="pathsToggleList"></div>
     </div>
     
     <div class="scene-list-panel" id="sceneListPanel">
         <div class="panel-header">
-            <h3>📋 قائمة المشاهد</h3>
+            <h3>📋 SCENE LIST</h3>
         </div>
         <div class="scene-list" id="sceneList"></div>
     </div>
@@ -565,12 +565,12 @@
             document.getElementById('autoRotateBtn').onclick = () => {
                 autoRotate = !autoRotate;
                 controls.autoRotate = autoRotate;
-                document.getElementById('autoRotateBtn').textContent = autoRotate ? '⏸️ إيقاف الدوران' : '▶️ تشغيل الدوران';
+                document.getElementById('autoRotateBtn').textContent = autoRotate ? '⏸️ Rotation OFF' : '▶️ Rotation ON';
             };
             
             document.getElementById('toggleMeasurements').onclick = () => {
                 showMeasurements = !showMeasurements;
-                document.getElementById('toggleMeasurements').textContent = showMeasurements ? '📏 إخفاء القياسات' : '📏 إظهار القياسات';
+                document.getElementById('toggleMeasurements').textContent = showMeasurements ? '📏 Hide Meas' : '📏 Shoe Meas';
                 measurementElements.forEach(e => {
                     if(e.line) e.line.style.display = showMeasurements ? 'block' : 'none';
                 });
