@@ -467,6 +467,48 @@
                 padding: 4px 10px;
             }
         }
+        /* تعديل max-height ليكون مناسباً */
+.scene-list-panel {
+    position: fixed; 
+    top: 50%; 
+    left: 20px; 
+    transform: translateY(-50%);
+    width: 260px; 
+    max-height: min(70vh, 500px); /* حد أقصى 500px أو 70% من الشاشة */
+    background: rgba(20,30,40,0.25);
+    backdrop-filter: blur(12px); 
+    border: 1px solid rgba(74,108,143,0.3);
+    border-radius: 12px; 
+    color: white; 
+    z-index: 900;
+    display: flex; 
+    flex-direction: column; 
+    overflow: hidden;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+/* ضبط ارتفاع المحتوى القابل للسكرول */
+.scene-list { 
+    flex: 1;
+    overflow-y: auto; 
+    padding: 8px; 
+    max-height: calc(min(70vh, 500px) - 60px); /* ناقص ارتفاع الـ header */
+}
+
+/* للهاتف */
+@media (max-width: 768px) {
+    .scene-list-panel {
+        width: 220px;
+        max-height: 60vh; /* أطول بقليل في الهاتف */
+        top: 50%;
+        transform: translateY(-50%);
+        left: 70px; /* بجانب الأزرار */
+    }
+    
+    .scene-list {
+        max-height: calc(60vh - 60px);
+    }
+}
     </style>
 </head>
 <body>
@@ -1018,57 +1060,133 @@
                     hideInfoPanel();
                 }
             });
+            // ===== التحكم بعناصر الهاتف المحمول (نسخة محسنة) =====
+const isMobile = window.innerWidth <= 768;
+
+if (isMobile) {
+    const sceneListPanel = document.getElementById('sceneListPanel');
+    const pathsPanel = document.getElementById('pathsPanel');
+    const toggleSceneBtn = document.getElementById('toggleSceneListBtn');
+    const togglePathsBtn = document.getElementById('togglePathsPanelBtn');
+    const mobileControls = document.getElementById('mobileControls');
+    
+    // إظهار أزرار التحكم
+    if (mobileControls) mobileControls.style.display = 'flex';
+    
+    // تهيئة الحالة الأولية: القوائم مخفية
+    if (sceneListPanel) {
+        sceneListPanel.classList.add('hidden');
+        sceneListPanel.style.display = 'flex'; // تبقى موجودة لكن مخفية بالـ transform
+    }
+    if (pathsPanel) {
+        pathsPanel.classList.remove('show');
+        pathsPanel.style.display = 'block'; // تبقى موجودة لكن مخفية بالـ display
+    }
+    
+    // زر قائمة المشاهد
+    if (toggleSceneBtn) {
+        toggleSceneBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            e.preventDefault();
             
-            const isMobile = window.innerWidth <= 768;
+            // تبديل حالة قائمة المشاهد
+            sceneListPanel.classList.toggle('hidden');
             
-            if (isMobile) {
-                const sceneListPanel = document.getElementById('sceneListPanel');
-                const pathsPanel = document.getElementById('pathsPanel');
-                const toggleSceneBtn = document.getElementById('toggleSceneListBtn');
-                const togglePathsBtn = document.getElementById('togglePathsPanelBtn');
-                
-                if (sceneListPanel) sceneListPanel.classList.add('hidden');
-                
-                if (toggleSceneBtn) {
-                    toggleSceneBtn.addEventListener('click', () => {
-                        sceneListPanel.classList.toggle('hidden');
-                    });
-                }
-                
-                if (togglePathsBtn) {
-                    togglePathsBtn.addEventListener('click', () => {
-                        pathsPanel.classList.toggle('show');
-                    });
-                }
-                
-                const sceneList = document.getElementById('sceneList');
-                if (sceneList) {
-                    sceneList.addEventListener('click', (e) => {
-                        if (e.target.closest('.scene-item')) {
-                            sceneListPanel.classList.add('hidden');
-                        }
-                    });
-                }
+            // إذا فتحنا المشاهد، نخفي المسارات تلقائياً
+            if (!sceneListPanel.classList.contains('hidden')) {
+                pathsPanel.classList.remove('show');
             }
             
-            window.addEventListener('resize', onWindowResize, false);
+            console.log('Scene list toggled:', !sceneListPanel.classList.contains('hidden'));
+        });
+    }
+    
+    // زر لوحة المسارات
+    if (togglePathsBtn) {
+        togglePathsBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            e.preventDefault();
             
-            function onWindowResize() {
-                camera.aspect = window.innerWidth / window.innerHeight;
-                camera.updateProjectionMatrix();
-                renderer.setSize(window.innerWidth, window.innerHeight);
-                
-                const mobileControls = document.getElementById('mobileControls');
-                if (window.innerWidth <= 768) {
-                    if (mobileControls) mobileControls.style.display = 'flex';
-                } else {
-                    if (mobileControls) mobileControls.style.display = 'none';
-                    const sceneListPanel = document.getElementById('sceneListPanel');
-                    const pathsPanel = document.getElementById('pathsPanel');
-                    if (sceneListPanel) sceneListPanel.classList.remove('hidden');
-                    if (pathsPanel) pathsPanel.classList.remove('show');
-                }
+            // تبديل حالة لوحة المسارات
+            pathsPanel.classList.toggle('show');
+            
+            // إذا فتحنا المسارات، نخفي المشاهد تلقائياً
+            if (pathsPanel.classList.contains('show')) {
+                sceneListPanel.classList.add('hidden');
             }
+            
+            console.log('Paths panel toggled:', pathsPanel.classList.contains('show'));
+        });
+    }
+    
+    // عند النقر على مشهد، نخفي القائمة
+    const sceneList = document.getElementById('sceneList');
+    if (sceneList) {
+        sceneList.addEventListener('click', (e) => {
+            if (e.target.closest('.scene-item')) {
+                sceneListPanel.classList.add('hidden');
+            }
+        });
+    }
+    
+    // لا نخفي القوائم عند النقر خارجها - نتركها مفتوحة حتى يغلقها المستخدم بالزر
+} else {
+    // وضع الكمبيوتر: نظهر كل شيء
+    const sceneListPanel = document.getElementById('sceneListPanel');
+    const pathsPanel = document.getElementById('pathsPanel');
+    const mobileControls = document.getElementById('mobileControls');
+    
+    if (sceneListPanel) {
+        sceneListPanel.classList.remove('hidden');
+        sceneListPanel.style.display = 'flex';
+    }
+    if (pathsPanel) {
+        pathsPanel.classList.remove('show');
+        pathsPanel.style.display = 'block';
+    }
+    if (mobileControls) mobileControls.style.display = 'none';
+}
+
+// مستمع حدث تغيير حجم النافذة
+window.addEventListener('resize', onWindowResize, false);
+
+function onWindowResize() {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    
+    const mobileControls = document.getElementById('mobileControls');
+    const sceneListPanel = document.getElementById('sceneListPanel');
+    const pathsPanel = document.getElementById('pathsPanel');
+    
+    if (window.innerWidth <= 768) {
+        // وضع الهاتف
+        if (mobileControls) mobileControls.style.display = 'flex';
+        
+        // نخفي القوائم عند التحول للهاتف
+        if (sceneListPanel) {
+            sceneListPanel.classList.add('hidden');
+            sceneListPanel.style.display = 'flex';
+        }
+        if (pathsPanel) {
+            pathsPanel.classList.remove('show');
+            pathsPanel.style.display = 'block';
+        }
+    } else {
+        // وضع الكمبيوتر
+        if (mobileControls) mobileControls.style.display = 'none';
+        
+        // نظهر كل شيء في الكمبيوتر
+        if (sceneListPanel) {
+            sceneListPanel.classList.remove('hidden');
+            sceneListPanel.style.display = 'flex';
+        }
+        if (pathsPanel) {
+            pathsPanel.classList.remove('show');
+            pathsPanel.style.display = 'block';
+        }
+    }
+}
 
             function animate() {
                 requestAnimationFrame(animate);
