@@ -61,11 +61,44 @@
             cursor: pointer; z-index: 1000; pointer-events: auto;
         }
         
+        /* ===== أنماط القياسات المحسنة ===== */
+        .measurement-line {
+            position: absolute; 
+            pointer-events: none; 
+            z-index: 1500;
+            border-top: 4px solid #ffaa44; 
+            box-shadow: 0 0 20px #ffaa44;
+            border-radius: 4px; 
+            transform-origin: 0 0; 
+            height: 4px;
+        }
+
+        .measurement-point {
+            position: absolute; 
+            width: 12px; 
+            height: 12px;
+            background: #ffaa44; 
+            border-radius: 50%;
+            box-shadow: 0 0 20px #ffaa44; 
+            transform: translate(-50%, -50%); 
+            z-index: 1501;
+        }
+
         .measurement-label {
-            position: absolute; background: rgba(0,0,0,0.8); color: white;
-            padding: 8px 16px; border-radius: 30px; font-size: 20px;
-            border: 2px solid #ffaa44; transform: translate(-50%, -50%);
-            white-space: nowrap; z-index: 503;
+            position: absolute; 
+            background: rgba(0, 0, 0, 0.8);
+            color: white; 
+            padding: 8px 16px; 
+            border-radius: 30px; 
+            font-size: 20px;
+            font-weight: bold; 
+            border: 2px solid #ffaa44; 
+            box-shadow: 0 0 30px #ffaa44;
+            transform: translate(-50%, -50%); 
+            white-space: nowrap; 
+            z-index: 1502;
+            backdrop-filter: blur(5px); 
+            text-shadow: 2px 2px 4px black;
         }
         
         @media (max-width: 768px) {
@@ -100,6 +133,86 @@
 
     <script>
         // =======================================
+        // دوال مساعدة للمسارات والقياسات
+        // =======================================
+        
+        // ✅ دالة لإنشاء قطعة مسار مع الإزاحة
+        function createPathSegment(start, end, color, type) {
+            const direction = new THREE.Vector3().subVectors(end, start);
+            const distance = direction.length();
+            
+            if (distance < 0.5) return null;
+            
+            // إزاحة المسار للخارج (نفس الأداة)
+            const startDir = start.clone().normalize();
+            const endDir = end.clone().normalize();
+            const offsetStart = startDir.multiplyScalar(505); // 500 + 5
+            const offsetEnd = endDir.multiplyScalar(505);
+            
+            const cylinder = new THREE.Mesh(
+                new THREE.CylinderGeometry(3.5, 3.5, distance, 12),
+                new THREE.MeshStandardMaterial({ 
+                    color: color,
+                    emissive: color,
+                    emissiveIntensity: 0.4,
+                    depthTest: false, // إلغاء اختبار العمق
+                    depthWrite: false  // إلغاء كتابة العمق
+                })
+            );
+            
+            cylinder.renderOrder = 999; // رفع الترتيب فوق كل شيء
+            
+            const midPoint = new THREE.Vector3().addVectors(offsetStart, offsetEnd).multiplyScalar(0.5);
+            cylinder.position.copy(midPoint);
+            
+            cylinder.quaternion.setFromUnitVectors(
+                new THREE.Vector3(0, 1, 0),
+                direction.clone().normalize()
+            );
+            
+            cylinder.userData = { type: type };
+            
+            return cylinder;
+        }
+
+        // ✅ دالة لإنشاء قطعة قياس مع الإزاحة
+        function createMeasurementSegment(start, end, length) {
+            const direction = new THREE.Vector3().subVectors(end, start);
+            const distance = direction.length();
+            
+            if (distance < 0.5) return null;
+            
+            // إزاحة للخارج
+            const startDir = start.clone().normalize();
+            const endDir = end.clone().normalize();
+            const offsetStart = startDir.multiplyScalar(505);
+            const offsetEnd = endDir.multiplyScalar(505);
+            
+            const cylinder = new THREE.Mesh(
+                new THREE.CylinderGeometry(3, 3, distance, 12),
+                new THREE.MeshStandardMaterial({ 
+                    color: 0xffaa44,
+                    emissive: 0x442200,
+                    emissiveIntensity: 0.5,
+                    depthTest: false,
+                    depthWrite: false
+                })
+            );
+            
+            cylinder.renderOrder = 998;
+            
+            const midPoint = new THREE.Vector3().addVectors(offsetStart, offsetEnd).multiplyScalar(0.5);
+            cylinder.position.copy(midPoint);
+            
+            cylinder.quaternion.setFromUnitVectors(
+                new THREE.Vector3(0, 1, 0),
+                direction.clone().normalize()
+            );
+            
+            return cylinder;
+        }
+
+        // =======================================
         // نظام تحميل المشاهد الذكي (Lazy Loading)
         // =======================================
         
@@ -124,11 +237,10 @@
                     return [];
                 }
             }
-            
-            async loadScene(index) {
+
+        async loadScene(index) {
                 if (this.isLoading) return null;
                 
-                // إذا كان المشهد محملاً مسبقاً
                 if (this.loadedScenes.has(index)) {
                     console.log(`✅ مشهد ${index} من الذاكرة المخبأة`);
                     return this.loadedScenes.get(index);
@@ -138,18 +250,13 @@
                 
                 try {
                     const sceneInfo = this.scenes[index];
-                    if (!sceneInfo) {
-                        throw new Error(`المشهد ${index} غير موجود`);
-                    }
+                    if (!sceneInfo) throw new Error(`المشهد ${index} غير موجود`);
                     
                     console.log(`📥 تحميل المشهد ${index}: ${sceneInfo.name}`);
                     const response = await fetch(sceneInfo.data);
                     const sceneData = await response.json();
                     
-                    // تخزين في الذاكرة المخبأة
                     this.loadedScenes.set(index, sceneData);
-                    
-                    // تفريغ المشاهد البعيدة (أكثر من 3 مشاهد)
                     this.cleanupCache(index);
                     
                     this.isLoading = false;
@@ -163,7 +270,7 @@
             }
             
             cleanupCache(currentIndex) {
-                const maxCache = 3; // نحتفظ بآخر 3 مشاهد فقط
+                const maxCache = 3;
                 const indicesToKeep = [currentIndex - 1, currentIndex, currentIndex + 1]
                     .filter(i => i >= 0 && i < this.scenes.length);
                 
@@ -176,7 +283,6 @@
             }
             
             preloadNextScene(currentIndex) {
-                // تحميل المشهد التالي في الخلفية
                 if (currentIndex + 1 < this.scenes.length) {
                     setTimeout(() => {
                         if (!this.loadedScenes.has(currentIndex + 1)) {
@@ -205,6 +311,7 @@
         
         // ===== تهيئة نظام التحميل =====
         const sceneLoader = new SceneLoader();
+
         // ===== دوال القياس =====
         function createMeasurementElement(m) {
             const line = document.createElement('div'); line.className = 'measurement-line'; line.style.display = 'none';
@@ -304,7 +411,24 @@
         function rebuildHotspots() {
             document.querySelectorAll('.hotspot-marker').forEach(el => el.remove());
             hotspotMarkers = {};
-            // يتم إعادة البناء بعد تحميل المشهد
+            const cs = sceneLoader.scenes[currentSceneIndex];
+            if (!cs?.hotspots) return;
+            
+            const w = window.innerWidth, h = window.innerHeight;
+            cs.hotspots.forEach(h => {
+                const pos = new THREE.Vector3(h.position.x, h.position.y, h.position.z);
+                const proj = pos.clone().project(camera);
+                if (proj.z > 1) return;
+                
+                const x = (proj.x * 0.5 + 0.5) * w;
+                const y = (-proj.y * 0.5 + 0.5) * h;
+                if (x < -100 || x > w+100 || y < -100 || y > h+100) return;
+                
+                const el = createHotspotElement(x, y, h.type, h.data);
+                el._worldPosition = pos.clone();
+                document.body.appendChild(el);
+                hotspotMarkers[h.id] = el;
+            });
         }
 
         function updateHotspotsPosition() {
@@ -342,20 +466,17 @@
         async function loadScene(index) {
             console.log(`🔄 تحميل المشهد ${index}`);
             
-            // تحميل بيانات المشهد
             const sceneData = await sceneLoader.loadScene(index);
             if (!sceneData) return;
             
             currentSceneIndex = index;
             
-            // تنظيف المشهد الحالي
             if (sphereMesh) scene3D.remove(sphereMesh);
             document.querySelectorAll('.hotspot-marker').forEach(el => el.remove());
             allPaths.forEach(p => scene3D.remove(p));
             allPaths = [];
             hotspotMarkers = {};
             
-            // تحميل الصورة
             const texture = await new Promise((resolve, reject) => {
                 new THREE.TextureLoader().load(sceneData.image, resolve, undefined, reject);
             });
@@ -369,30 +490,30 @@
             );
             scene3D.add(sphereMesh);
             
-            // بناء المسارات
-            if (sceneData.paths) {
+            // ✅ بناء المسارات المحسنة
+            if (sceneData.paths && sceneData.paths.length > 0) {
+                console.log('🔄 بناء', sceneData.paths.length, 'مسار');
+                
                 sceneData.paths.forEach(pathData => {
-                    if (!pathData.points) return;
-                    const pts = pathData.points.map(p => new THREE.Vector3(p.x, p.y, p.z));
-                    for (let i=0; i<pts.length-1; i++) {
-                        const s = pts[i], e = pts[i+1];
-                        const dir = new THREE.Vector3().subVectors(e, s);
-                        const dist = dir.length();
-                        if (dist < 0.5) continue;
+                    if (!pathData.points || pathData.points.length < 2) return;
+                    
+                    const color = pathData.color || '#ffaa44';
+                    const points = pathData.points.map(p => new THREE.Vector3(p.x, p.y, p.z));
+                    
+                    for (let i = 0; i < points.length - 1; i++) {
+                        const start = points[i];
+                        const end = points[i + 1];
                         
-                        const cyl = new THREE.Mesh(
-                            new THREE.CylinderGeometry(3.5,3.5,dist,12),
-                            new THREE.MeshStandardMaterial({ color: pathData.color || '#ffaa44', emissive: '#442200' })
-                        );
-                        const mid = new THREE.Vector3().addVectors(s, e).multiplyScalar(0.5);
-                        cyl.position.copy(mid);
-                        cyl.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), dir.clone().normalize());
-                        cyl.userData = { type: pathData.type };
-                        cyl.visible = false;
-                        scene3D.add(cyl);
-                        allPaths.push(cyl);
+                        // ✅ استخدام الدالة المحسنة
+                        const cylinder = createPathSegment(start, end, color, pathData.type);
+                        if (cylinder) {
+                            scene3D.add(cylinder);
+                            allPaths.push(cylinder);
+                        }
                     }
                 });
+                
+                console.log('✅ تم بناء', allPaths.length, 'مقطع مسار (فوق الصورة)');
             }
             
             // بناء النقاط
@@ -417,10 +538,7 @@
             // بناء القياسات
             loadMeasurements(sceneData);
             
-            // تحديث القائمة
             updateSceneList();
-            
-            // تحميل المشهد التالي في الخلفية
             sceneLoader.preloadNextScene(index);
             
             console.log(`✅ تم تحميل المشهد ${index}: ${sceneData.name}`);
@@ -460,11 +578,9 @@
             
             createPathsTogglePanel();
             
-            // تحميل manifest أولاً
             await sceneLoader.loadManifest();
             updateSceneList();
             
-            // تحميل أول مشهد
             if (sceneLoader.scenes.length > 0) {
                 await loadScene(0);
             }
@@ -485,7 +601,6 @@
             animate();
         }
         
-        // بدء التشغيل
         init();
     </script>
 </body>
